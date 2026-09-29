@@ -1,0 +1,55 @@
+{
+  "source": {
+    "name": "OpenStreetMap contributors",
+    "license": "ODbL 1.0",
+    "attributionUrl": "https://www.openstreetmap.org/copyright",
+    "coordinateSystem": "WGS84",
+    "retrieved": "2026-09-29",
+    "regionalDataTimestamp": "2026-07-24T11:04:51Z",
+    "regionalSource": "https://overpass.kumi.systems/api/interpreter",
+    "coreSource": "https://api.openstreetmap.org/api/0.6/map?bbox=116.340,23.530,116.358,23.544",
+    "bounds": [
+      116.04,
+      23.19,
+      116.51,
+      23.63
+    ],
+    "note": "Major highways and river/canal geometry for full bounds; all mapped roads in Rongcheng core. Some water and urban polygons from current OSM API extracts. Simplified for display; not a routable navigation graph."
+  },
+  "featureCount": 2725,
+  "coordinateCount": 16048,
+  "fileBytes": 693281,
+  "actualBounds": [
+    116.04,
+    23.19,
+    116.51,
+    23.63
+  ],
+  "countsByKind": {
+    "road": 2333,
+    "water": 244,
+    "urban": 148
+  },
+  "countsByHighwayClass": {
+    "secondary": 428,
+    "primary": 546,
+    "trunk": 197,
+    "motorway": 547,
+    "motorway_link": 353,
+    "trunk_link": 66,
+    "primary_link": 71,
+    "secondary_link": 38,
+    "residential": 18,
+    "service": 32,
+    "unclassified": 22,
+    "tertiary": 9,
+    "footway": 6
+  },
+  "rawFilesUsed": [
+    "osm-roads-mirror-1.json",
+    "osm-rongcheng.xml",
+    "osm-region-0.xml",
+    "osm-region-1.xml"
+  ],
+  "simplification": "Ramer-Douglas-Peucker tolerance 0.000075 degrees for regional lines, 0.000018 for core lines, 0.00008 for context polygons; coordinates rounded to 5 decimal places; regional lines clipped to requested bbox."
+}
