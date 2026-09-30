@@ -20,6 +20,13 @@
   let cityDetail = false;
   let toastTimeout;
   let mapProjection, mapZoom, mapTransform, mapWidth=600, mapHeight=390;
+  // Cached road corridors are bundled in data/routes.js, so the map remains
+  // useful on GitHub Pages when the live routing service is unavailable.
+  const staticRoadRoutes = window.TRIP_ROUTES || {};
+  const liveRoadRoutes = new Map();
+  const liveRoadPending = new Map();
+  const liveRoadFailed = new Set();
+  let roadRouteMessage = '';
   const svg = d3.select('#route-map');
   const scene = svg.append('g');
   const save = () => {try {localStorage.setItem(STORE_KEY,JSON.stringify(state));} catch (_) {}};
@@ -33,18 +40,40 @@
     const c=p.coords || p.mapCoords || p.visualCoords;
     return Array.isArray(c)&&c.length===2&&c.every(v=>Number.isFinite(Number(v)))?[Number(c[0]),Number(c[1])]:null;
   };
-  const hasExactCoords = id => Array.isArray(places[id]?.coords) && places[id].coords.length===2;
+  // `coords` are verified/public map points. `routeCoords` may be a nearby
+  // road-access reference used to build the cached corridor, so it must not
+  // be presented as an exact attraction or hotel location.
+  const hasExactCoords = id => {
+    const c=places[id]?.coords;
+    return Array.isArray(c)&&c.length===2&&c.every(v=>Number.isFinite(Number(v)));
+  };
   const searchLink = id => {const p=places[id];return `https://uri.amap.com/search?keyword=${encodeURIComponent(p.query || p.name)}&city=${encodeURIComponent(p.area==='shenzhen'?'深圳':'揭阳')}&view=map&src=chaoshan-trip`;};
   const baiduSearch = id => `https://api.map.baidu.com/place/search?query=${encodeURIComponent(places[id].query || places[id].name)}&region=${encodeURIComponent(places[id].area==='shenzhen'?'深圳':'揭阳')}&output=html&src=webapp.chaoshan.trip`;
-  const routePoint = id => {const p=places[id];return p.coords && !['home','hotel','mountain'].includes(id)?`latlng:${p.coords[1]},${p.coords[0]}|name:${p.query||p.name}`:p.query||p.name;};
+  // `routeCoords` are road-access coordinates used only for routing. They
+  // can be different from the visual pin when an attraction entrance is not
+  // mapped precisely yet.
+  const routeCoords = id => {
+    const p=places[id], c=p?.routeCoords || p?.coords;
+    return Array.isArray(c)&&c.length===2&&c.every(v=>Number.isFinite(Number(v)))?[Number(c[0]),Number(c[1])]:null;
+  };
+  const navigationPoint = id => {
+    const p=places[id],c=routeCoords(id);
+    // Only send coordinates to third-party navigation when the point is a
+    // public station/home anchor or a named OSM parking destination. Scenic
+    // and hotel road references fall back to a named search for confirmation.
+    const useCoords=(hasExactCoords(id)&&['puning-station','home'].includes(id)) || id==='mountain-parking';
+    return useCoords&&c?`latlng:${c[1]},${c[0]}|name:${p.query||p.name}`:p.query||p.name;
+  };
+  const routePoint = id => navigationPoint(id);
   const routeLink = (from,to,mode='driving') => `https://api.map.baidu.com/direction?origin=${encodeURIComponent(routePoint(from))}&destination=${encodeURIComponent(routePoint(to))}&mode=${mode}&region=${encodeURIComponent(places[from].area==='shenzhen'?'深圳':'揭阳')}&coord_type=wgs84&output=html&src=webapp.chaoshan.trip`;
   // Amap's public URI scheme opens a real car route with live traffic and
   // turn-by-turn directions. Coordinates are only sent for verified points;
   // area anchors fall back to a named search so the traveller can confirm the
   // entrance before starting navigation.
   const amapPoint = id => {
-    const p=places[id], c=hasExactCoords(id)?p.coords:null;
-    return c ? `${c[0]},${c[1]},${encodeURIComponent(p.query||p.name)}` : encodeURIComponent(p.query||p.name);
+    const p=places[id], c=routeCoords(id);
+    const useCoords=(hasExactCoords(id)&&['puning-station','home'].includes(id)) || id==='mountain-parking';
+    return useCoords&&c ? `${c[0]},${c[1]},${encodeURIComponent(p.query||p.name)}` : encodeURIComponent(p.query||p.name);
   };
   const amapRouteLink = (from,to,via=[]) => {
     const a=places[from], b=places[to], ac=hasExactCoords(from), bc=hasExactCoords(to);
@@ -52,53 +81,68 @@
     const viaPart=via.filter(hasExactCoords).map(amapPoint).join(';');
     return `https://uri.amap.com/navigation?from=${amapPoint(from)}&to=${amapPoint(to)}${viaPart?`&via=${viaPart}`:''}&mode=car&coordinate=wgs84&callnative=0`;
   };
+  const amapRouteLabel = (from,to) => hasExactCoords(from)&&hasExactCoords(to) ? '高德驾车 ↗' : '高德地点核对 ↗';
 
   /*
-   * The overview map is deliberately a road-corridor illustration rather
-   * than a straight point-to-point connector. Each preset contains optional
-   * intermediate road waypoints, and its links open the live Amap/Baidu route.
-   * This makes the choice explicit while avoiding a false promise that a
-   * static map can know National Day traffic or temporary road controls.
+   * Presets contain only the actual trip stops. Their red lines come from
+   * bundled road geometry (data/routes.js), generated by OSRM over OSM roads.
+   * A live OSRM refresh can replace a segment while the page is online, but a failed
+   * request never turns into a made-up curve or a straight connector.
    */
+  // These are the trip's actual driving legs. Their map geometry is bundled
+  // from the OSM road network in data/routes.js; restaurants stay out of the
+  // driving route and remain browse/search markers only.
   const ROUTE_PRESETS = {
     arrival: [
-      {id:'arrival-direct',label:'普宁站 → 御景城',note:'夜间接站后直接回家',points:['puning-station','home'],via:{'puning-station>home':[[116.186,23.286],[116.178,23.303],[116.166,23.316]]}},
+      {id:'arrival-direct',label:'普宁站 → 御景城',note:'夜间接站后沿道路回家',points:['puning-station','home']},
     ],
     d1: [
-      {id:'d1-city',label:'人民公园顺路',note:'接站 → 御景城 → 人民公园 → 御景城 → 酒店',points:['puning-station','home','park','home','hotel'],via:{'puning-station>home':[[116.186,23.286],[116.178,23.303],[116.166,23.316]],'home>park':[[116.159,23.309],[116.164,23.303]],'park>home':[[116.164,23.303],[116.159,23.309]],'home>hotel':[[116.171,23.344],[116.193,23.381],[116.207,23.417],[116.212,23.431]]}},
-      {id:'d1-rest',label:'直接入住德安里',note:'接站 → 御景城 → 酒店，下午少绕行',points:['puning-station','home','hotel'],via:{'puning-station>home':[[116.186,23.286],[116.178,23.303],[116.166,23.316]],'home>hotel':[[116.171,23.344],[116.193,23.381],[116.207,23.417],[116.212,23.431]]}},
+      {id:'d1-hotel',label:'普宁站 → 御景城 → 华庭优品客房',note:'凌晨接站回家休息，下午沿道路开往洪阳住宿',points:['puning-station','home','hotel']},
     ],
     d2: [
-      {id:'d2-water-temple',label:'水乡＋南岩',note:'德安里 → 南溪水乡 → 南岩古寺 → 御景城',points:['hotel','nanxi','nanyan','home'],via:{'hotel>nanxi':[[116.216,23.428],[116.227,23.414],[116.237,23.401]],'nanxi>nanyan':[[116.242,23.400],[116.248,23.406]],'nanyan>home':[[116.245,23.404],[116.229,23.381],[116.202,23.350],[116.178,23.326]]}},
-      {id:'d2-water-home',label:'只走南溪水乡',note:'德安里 → 南溪水乡 → 御景城',points:['hotel','nanxi','home'],via:{'hotel>nanxi':[[116.216,23.428],[116.227,23.414],[116.237,23.401]],'nanxi>home':[[116.225,23.383],[116.205,23.355],[116.178,23.326]]}},
-      {id:'d2-direct-home',label:'直接回御景城',note:'退房 → 御景城，适合雨天或想休息',points:['hotel','home'],via:{'hotel>home':[[116.209,23.413],[116.197,23.381],[116.178,23.344],[116.166,23.316]]}},
+      {id:'d2-water-temple',label:'酒店 → 南溪 → 南岩 → 御景城',note:'南溪大港码头道路入口；南岩为道路参考点',points:['hotel','nanxi','nanyan','home']},
+      {id:'d2-water-home',label:'酒店 → 南溪水乡 → 御景城',note:'只走南溪主线，沿道路往返',points:['hotel','nanxi','home']},
+      {id:'d2-direct-home',label:'酒店 → 御景城',note:'退房后直接回家，适合雨天或想休息',points:['hotel','home']},
     ],
     d3: [
-      {id:'d3-mountain',label:'百二丘田山线',note:'御景城 → 百二丘田 → 御景城 → 普宁站',points:['home','mountain','home','puning-station'],via:{'home>mountain':[[116.163,23.300],[116.157,23.282],[116.166,23.265]],'mountain>home':[[116.166,23.276],[116.172,23.294],[116.166,23.316]],'home>puning-station':[[116.176,23.302],[116.185,23.287],[116.194,23.269]]}},
-      {id:'d3-direct-station',label:'休息后直接去车站',note:'御景城 → 普宁站，给返程留充足缓冲',points:['home','puning-station'],via:{'home>puning-station':[[116.176,23.302],[116.185,23.287],[116.194,23.269]]}},
+      {id:'d3-mountain',label:'御景城 → 百二丘田停车场 → 普宁站',note:'先导航到停车场，步行入口现场确认',points:['home','mountain-parking','home','puning-station']},
+      {id:'d3-direct-station',label:'御景城 → 普宁站',note:'休息后直接去车站，留足返程缓冲',points:['home','puning-station']},
     ],
   };
   const routePresets = () => {
     let presets=(ROUTE_PRESETS[state.day]||[]).slice();
-    if(state.day==='d1'&&skippedVisit('park')) presets=presets.filter(p=>p.id!=='d1-city');
     if(state.day==='d2'&&(!nanxiPlanned()||skippedVisit('nanxi'))) presets=presets.filter(p=>p.id==='d2-direct-home');
     if(state.day==='d2'&&skippedVisit('nanyan')) presets=presets.filter(p=>p.id!=='d2-water-temple');
     if(state.day==='d3'&&!mountainPlanned()) presets=presets.filter(p=>p.id==='d3-direct-station');
     return presets.length?presets:ROUTE_PRESETS[state.day]||[];
   };
   const activeRoutePreset = () => {const options=routePresets();return options.find(p=>p.id===state.routeVariant)||options[0]||null;};
-  const routeShape = preset => {
+  const routeKey = (from,to) => `${from==='puning-station'?'station':from}>${to==='puning-station'?'station':to}`;
+  const staticSegment = (from,to) => staticRoadRoutes[routeKey(from,to)]?.coordinates || null;
+  const routeSegments = preset => {
     if(!preset)return [];
     const out=[];
     for(let i=0;i<preset.points.length-1;i++){
-      const from=preset.points[i],to=preset.points[i+1],a=visualCoords(from),b=visualCoords(to);
-      if(!a||!b)continue;
-      const via=(preset.via&&preset.via[`${from}>${to}`])||[];
-      const seg=[a,...via,b];
-      if(i)seg.shift();
-      out.push(...seg);
+      const seg=liveRoadRoutes.get(routeKey(preset.points[i],preset.points[i+1])) || staticSegment(preset.points[i],preset.points[i+1]);
+      if(Array.isArray(seg)&&seg.length>1)out.push(seg);
     }
     return out;
+  };
+  const missingRouteSegments = preset => (preset?.points||[]).slice(0,-1).map((from,i)=>[from,preset.points[i+1]]).filter(([from,to])=>!liveRoadRoutes.has(routeKey(from,to))&&!staticSegment(from,to));
+  const requestLiveRoadRoutes = preset => {
+    if(!preset||typeof fetch!=='function')return;
+    for(let i=0;i<preset.points.length-1;i++){
+      const from=preset.points[i],to=preset.points[i+1],key=routeKey(from,to);
+      if(liveRoadRoutes.has(key)||liveRoadPending.has(key)||liveRoadFailed.has(key))continue;
+      const a=routeCoords(from),b=routeCoords(to); if(!a||!b)continue;
+      const url=`https://router.project-osrm.org/route/v1/driving/${a[0]},${a[1]};${b[0]},${b[1]}?overview=full&geometries=geojson&steps=false`;
+      const task=fetch(url,{mode:'cors'}).then(r=>{if(!r.ok)throw new Error(`OSRM ${r.status}`);return r.json();}).then(data=>{
+        const coordinates=data?.routes?.[0]?.geometry?.coordinates;
+        if(!Array.isArray(coordinates)||coordinates.length<2)throw new Error('无道路几何');
+        liveRoadRoutes.set(key,coordinates); roadRouteMessage=''; drawMap();
+      }).catch(()=>{liveRoadFailed.add(key);roadRouteMessage='在线道路路线暂不可用，当前显示已缓存的 OSM 道路线；点击高德可获取实时导航。';drawMap();}).finally(()=>liveRoadPending.delete(key));
+      liveRoadPending.set(key,task);
+    }
   };
   const external = (href,label,cls='') => `<a href="${escape(href)}" class="${cls}" target="_blank" rel="noopener noreferrer">${label}</a>`;
   const toast = msg => {$('toast').textContent=msg;$('toast').hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>$('toast').hidden=true,2800);};
@@ -165,17 +209,31 @@
   }
 
   function routeLegs() {
-    if(state.day==='arrival') return [{from:'qinghu',to:'shenzhen-north',mode:'driving',time:'含叫车等待预留 30–60 分钟',note:'9/30 夜间 · 不依赖通宵地铁'}];
-    if(state.day==='d1') return [{from:'puning-station',to:'home',mode:'driving',time:'含出站、等车预留 45–75 分钟',note:'凌晨接站 · 送到御景城'},...(skippedVisit('park')?[]:[{from:'home',to:'park',mode:'driving',time:'单程规划预留 15–30 分钟',note:'午饭后轻松短走'},{from:'park',to:'home',mode:'driving',time:'单程规划预留 15–30 分钟',note:'回御景城收拾、再北上'}]),{from:'home',to:'hotel',mode:'driving',time:'规划预留 45–75 分钟',note:'15:30–16:30 出发 · 德安里周边入住'}];
-    if(state.day==='d2') return [...(nanxiEnabled()&&!skippedVisit('nanxi')?[{from:'hotel',to:'nanxi',mode:'driving',time:'规划预留 30–60 分钟',note:'大港码头与停车先核实'}]:[]),...(nanxiEnabled()&&!skippedVisit('nanxi')&&!skippedVisit('nanyan')?[{from:'nanxi',to:'nanyan',mode:'driving',time:'规划预留 15–30 分钟',note:'周边最多加一个点，可跳过'},{from:'nanyan',to:'home',mode:'driving',time:'规划预留 60–90 分钟',note:'最迟 15:30 左右离开'}]:nanxiEnabled()&&!skippedVisit('nanxi')?[{from:'nanxi',to:'home',mode:'driving',time:'规划预留 60–90 分钟',note:'跳过周边点，直接回御景城'}]:[{from:'hotel',to:'home',mode:'driving',time:'规划预留 60–90 分钟',note:'雨天或跳过南溪直接回御景城'}])];
-    return [...(state.mode==='rain'||skippedVisit('mountain')?[]:[{from:'home',to:'mountain',mode:'driving',time:'规划预留 30–45 分钟',note:'导航实际入口；灰寨村仅作方位参考'},{from:'mountain',to:'home',mode:'driving',time:'最迟 11:00 离开山线',note:'回御景城午饭与休息'}]),{from:'home',to:'puning-station',mode:'driving',time:'含叫车与步行预留 45–60 分钟',note:'19:00 出门，20:00 到站；车辆留家'}];
+    const preset=activeRoutePreset();
+    const points=preset?.points||[];
+    const labels={
+      'puning-station>home': ['含出站、等车预留 45–75 分钟','沿道路接站回御景城'],
+      'home>hotel': ['规划预留 45–75 分钟','沿道路前往华庭优品客房'],
+      'hotel>nanxi': ['规划预留 30–60 分钟','南溪道路接入参考；大港码头与停车先核实'],
+      'nanxi>nanyan': ['规划预留 15–30 分钟','南岩最近道路参考；入口与停车现场确认'],
+      'nanyan>home': ['规划预留 60–90 分钟','最迟 15:30 左右离开，沿道路回御景城'],
+      'nanxi>home': ['规划预留 60–90 分钟','跳过周边点后直接沿道路回御景城'],
+      'hotel>home': ['规划预留 60–90 分钟','雨天或跳过南溪直接回御景城'],
+      'home>mountain-parking': ['规划预留 30–45 分钟','导航到百二丘田停车场；入口与停车以现场为准'],
+      'mountain-parking>home': ['最迟 11:00 离开山线','停车场 → 御景城午饭与休息'],
+      'home>puning-station': ['含叫车与步行预留 45–60 分钟','约 19:00 从御景城出发，目标 20:00 到站'],
+    };
+    return points.slice(0,-1).map((from,i)=>{
+      const to=points[i+1], key=`${from}>${to}`, detail=labels[key]||['按实时导航复核','预设道路动线仅作排程参考'];
+      return {from,to,mode:'driving',time:detail[0],note:detail[1]};
+    });
   }
 
   function routePoints() {
+    const preset=activeRoutePreset();
+    if(preset?.points?.length) return [...preset.points];
     if(state.day==='arrival') return ['puning-station','home'];
-    if(state.day==='d1') return ['puning-station','home',...(skippedVisit('park')?[]:['park','home']),'hotel'];
-    if(state.day==='d2') return ['hotel',...(nanxiEnabled()&&!skippedVisit('nanxi')?['nanxi']:[]),...(nanxiEnabled()&&!skippedVisit('nanxi')&&!skippedVisit('nanyan')?['nanyan']:[]),'home'];
-    return ['home',...(state.mode==='rain'||skippedVisit('mountain')?[]:['mountain','home']),'puning-station'];
+    return ['home','puning-station'];
   }
 
   function renderTabs() {
@@ -201,9 +259,9 @@
     if(state.routeVariant!==activePreset?.id){state.routeVariant=activePreset?.id||'';save();}
     const presetBox=$('route-presets');
     if(presetBox) presetBox.innerHTML=presets.length?`<div class="route-preset-heading"><span>预设驾车路线</span><small>选择后地图按道路走向显示</small></div><div class="route-preset-list">${presets.map(p=>`<button class="route-preset ${p.id===activePreset?.id?'active':''}" data-route-preset="${escape(p.id)}" aria-pressed="${p.id===activePreset?.id}"><strong>${escape(p.label)}</strong><small>${escape(p.note)}</small></button>`).join('')}</div>`:'';
-    $('route-legs').innerHTML=routeLegs().map(l=>`<div class="leg"><span>${escape(places[l.from].short||places[l.from].name)} → ${escape(places[l.to].short||places[l.to].name)}</span><small>${escape(l.time)}<br>${escape(l.note)}</small><div class="leg-links">${external(amapRouteLink(l.from,l.to),'高德驾车 ↗')}${external(routeLink(l.from,l.to,l.mode),'百度驾车 ↗')}</div></div>`).join('');
+    $('route-legs').innerHTML=routeLegs().map(l=>`<div class="leg"><span>${escape(places[l.from].short||places[l.from].name)} → ${escape(places[l.to].short||places[l.to].name)}</span><small>${escape(l.time)}<br>${escape(l.note)}</small><div class="leg-links">${external(amapRouteLink(l.from,l.to),amapRouteLabel(l.from,l.to))}${external(routeLink(l.from,l.to,l.mode),'百度驾车 ↗')}</div></div>`).join('');
     document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===state.mode));
-    selected=state.day==='arrival'?'puning-station':state.day==='d1'?'home':state.day==='d2'?'hotel':mountainPlanned()?'mountain':'home';
+    selected=state.day==='arrival'?'puning-station':state.day==='d1'?'home':state.day==='d2'?'hotel':mountainPlanned()?'mountain-parking':'home';
     renderPlace();
     renderMap(true);
   }
@@ -242,7 +300,8 @@
     if(!mapZoom){mapZoom=d3.zoom().scaleExtent([.6,30]).on('zoom',event=>{mapTransform=event.transform;drawMap();});svg.call(mapZoom).on('dblclick.zoom',null);}
     mapZoom.extent([[0,0],[mapWidth,mapHeight]]);
     svg.call(mapZoom.transform,mapTransform);
-    $('map-title').textContent=state.day==='arrival'?'抵达后 · 普宁站到御景城':state.day==='d1'?'御景城 → 德安里住宿':state.day==='d2'?(nanxiEnabled()&&!skippedVisit('nanxi')?'德安里 → 南溪 → 御景城':'德安里 → 御景城'):(state.mode==='rain'||skippedVisit('mountain')?'御景城 → 普宁站':'御景城 → 百二丘田 → 普宁站');
+    const currentPreset=activeRoutePreset();
+    $('map-title').textContent=currentPreset?`驾车预设 · ${currentPreset.label}`:'当日暂无驾车预设';
     $('fit-map').textContent='全览';
     drawMap();
   }
@@ -270,11 +329,22 @@
     const route=routePoints();
     const ids=[...new Set(route.filter(id=>visualCoords(id)))];
     const preset=activeRoutePreset();
-    const shape=routeShape(preset);
-    const coords=(shape.length?shape:route.map(id=>visualCoords(id)).filter(Boolean)).map(c=>mapTransform.apply(mapProjection(c)));
-    scene.append('path').datum(coords).attr('class','route-path').attr('d',d3.line().curve(d3.curveCatmullRom.alpha(.35)));
+    requestLiveRoadRoutes(preset);
+    const segments=routeSegments(preset),shape=segments.flat();
+    // Never draw a straight connector when a road segment is unavailable.
+    // The bundled OSM corridor or the live OSRM geometry must provide every
+    // red segment; otherwise the map shows a clear status message instead.
+    // Each leg is drawn independently. This prevents a connector across a
+    // missing leg or between slightly different snapped road endpoints.
+    const segmentPixels=segments.map(segment=>segment.map(c=>mapTransform.apply(mapProjection(c))));
+    scene.append('g').selectAll('path').data(segmentPixels).join('path').attr('class','route-path').attr('d',d3.line().curve(d3.curveLinear));
     if(preset){
       scene.append('text').attr('class','route-label').attr('x',18).attr('y',22).text(`驾车预设 · ${preset.label}`);
+    }
+    const missing=missingRouteSegments(preset);
+    if(!shape.length||missing.length||roadRouteMessage){
+      const note=roadRouteMessage||(!shape.length?'正在读取道路路线…':`缺少 ${missing.length} 段道路数据；请点下方高德驾车打开实时路线。`);
+      scene.append('text').attr('class','route-status').attr('x',18).attr('y',39).text(note);
     }
     if(!cityDetail){const labels=[{name:'普宁',pos:[116.139,23.322]},{name:'洪阳',pos:[116.180,23.459]},{name:'南溪',pos:[116.235,23.395]}];scene.append('g').selectAll('text').data(labels).join('text').attr('class','town-label').attr('x',d=>mapTransform.apply(mapProjection(d.pos))[0]).attr('y',d=>mapTransform.apply(mapProjection(d.pos))[1]).text(d=>d.name);}
     let nearby=state.day==='d1'?['park']:state.day==='d2'?['deanli']:['deanli'];

@@ -1,5 +1,7 @@
-/* Coordinates are WGS84 from the linked OpenStreetMap records.
- * Null means an exact point has not been verified; use the named map search.
+/* Coordinates are WGS84 from the linked OpenStreetMap records where a source
+ * is shown. Null means an exact point has not been verified; use the named map
+ * search. routeCoords are road-access references used only for the cached
+ * driving geometry and are not presented as attraction or hotel coordinates.
  * mapCoords are visual-only area anchors for the interactive overview; they
  * must never be used as navigation coordinates.
  * Durations are suggested visiting time, not verified opening hours.
@@ -33,6 +35,16 @@ window.TRIP_PLACES = {
     access: '官方介绍有步道、游客中心与停车设施；当前入口、山路开放与国庆管理待核实。只走现场开放短线，雨后路滑或没睡好就留在家里休息。',
     source: 'http://www.puning.gov.cn/zjpn/lytd/lyjd/content/post_472510.html', sourceDate: '2020-08-12', extra: true
   },
+  'mountain-parking': {
+    id: 'mountain-parking', name: '百二丘田停车场（导航点）', short: '百二丘田停车场', area: 'puning', category: '停车', art: '停',
+    // OSM way 1314488771 is a mapped surface parking area beside 藏莲路;
+    // this is the driving destination, while the hiking point above remains
+    // a separate visual reference.
+    coords: [116.16531, 23.26413], mapLabel: '百二丘田停车场·藏莲路侧', query: '广东省揭阳市普宁市百二丘田停车场 藏莲路', duration: '停车、整理装备',
+    description: '山线驾车只导航到藏莲路侧停车场；到达后按现场指引确认是否能停车、步道入口和当天开放区域，再决定是否步行。',
+    access: '坐标来自 OpenStreetMap parking way 1314488771（仅作停车导航参考）；国庆交通管制、停车容量和入口以现场为准。',
+    source: 'https://www.openstreetmap.org/way/1314488771', sourceDate: '2026-09-30 核查', extra: false
+  },
   deanli: {
     id: 'deanli', name: '德安里', short: '德安里', area: 'north', category: '古厝', art: '厝',
     coords: [116.2115198, 23.4366566], mapLabel: '德安里古民居群', query: '广东省揭阳市普宁市洪阳镇德安里', duration: '1–1.5 小时',
@@ -49,15 +61,15 @@ window.TRIP_PLACES = {
   },
   nanxi: {
     id: 'nanxi', name: '南溪水乡', short: '南溪水乡', area: 'north', category: '水乡', art: '水',
-    coords: null, mapCoords: [116.235, 23.395], mapAccuracy: 'area', mapLabel: '南溪水乡·南溪镇片区锚点', query: '广东省揭阳市普宁市南溪镇南溪水乡大港码头', duration: '岸边短逛 45–60 分钟',
-    description: '在普宁北部看河道、村落和水岸生活。大港码头是官方文章中出现的具体地点，适合作为出发前核实的访问点。',
+    coords: null, routeCoords: [116.215087, 23.431082], mapCoords: [116.215087, 23.431082], mapAccuracy: 'road', mapLabel: '南溪水乡大港码头·道路接入参考', query: '广东省揭阳市普宁市南溪镇南溪水乡大港码头', duration: '岸边短逛 45–60 分钟',
+    description: '在普宁北部看河道、村落和水岸生活。地图点采用大港码头附近已标注道路接入参考，具体码头、停车与步行入口仍需到高德核对。',
     access: '2026 官方证实有游船码头、临水步道和游客中心；国庆开航、票价、班次、停车及具体入口未核实。先确认再去，乘船不列为必达项目。',
     source: 'http://www.puning.gov.cn/xwzx/pnxw/content/post_1018899.html', sourceDate: '2026-04-29', extra: true
   },
   nanyan: {
     id: 'nanyan', name: '南岩古寺', short: '南岩古寺', area: 'north', category: '古寺', art: '寺',
-    coords: null, mapCoords: [116.251, 23.412], mapAccuracy: 'area', mapLabel: '南溪登峰村·南岩古寺片区锚点', query: '广东省揭阳市普宁市南溪镇登峰村南岩古寺', duration: '45–60 分钟',
-    description: '位于南溪镇登峰村飞凤山岭，适合对寺院建筑感兴趣时替代水乡短停；不用与南溪所有选项叠加。',
+    coords: null, routeCoords: [116.240535, 23.399583], mapCoords: [116.240535, 23.399583], mapAccuracy: 'road', mapLabel: '南岩古寺·最近道路参考', query: '广东省揭阳市普宁市南溪镇登峰村南岩古寺', duration: '45–60 分钟',
+    description: '位于南溪镇登峰村飞凤山岭；地图点是 OSM 标注的最近道路参考，不等于寺院入口。适合对寺院建筑感兴趣时替代水乡短停，不用与南溪所有选项叠加。',
     access: '官方发布了旅游位置介绍；当前参访入口、开放时间、停车和国庆安排待确认，尊重现场参访秩序。',
     source: 'http://www.puning.gov.cn/zjpn/lytd/lylx/content/post_917809.html', sourceDate: '2025-02-03', extra: true
   },
@@ -149,7 +161,7 @@ window.TRIP_PLACES = {
   },
   hotel: {
     id: 'hotel', name: '普宁华庭优品客房', short: '华庭优品客房', area: 'north', category: '住宿', art: '宿',
-    coords: null, mapCoords: [116.2115198, 23.4366566], mapAccuracy: 'address', mapLabel: '普宁华庭优品客房·后山村片区', query: '普宁华庭优品客房 普宁市洪阳镇洪阳大道后山村洪马路西270号', address: '普宁市洪阳镇洪阳大道后山村洪马路西270号', duration: '10 月 1 日住 1 晚',
+    coords: null, routeCoords: [116.211882, 23.433319], mapCoords: [116.2115198, 23.4366566], mapAccuracy: 'address', mapLabel: '普宁华庭优品客房·后山村片区', query: '普宁华庭优品客房 普宁市洪阳镇洪阳大道后山村洪马路西270号', address: '普宁市洪阳镇洪阳大道后山村洪马路西270号', duration: '10 月 1 日住 1 晚',
     description: '已确定住在普宁华庭优品客房：普宁市洪阳镇洪阳大道后山村洪马路西270号。地图仍以洪阳片区参考点展示，导航请使用高德地址搜索。',
     access: '酒店名称和地址来自用户提供信息；入住、停车、房型和国庆前台安排请直接向酒店确认。',
     source: 'https://uri.amap.com/search?keyword=%E6%99%AE%E5%AE%81%E5%8D%8E%E5%BA%AD%E4%BC%98%E5%93%81%E5%AE%A2%E6%88%BF%20%E6%99%AE%E5%B8%82%E6%B4%AA%E9%98%B3%E9%95%87%E6%B4%AA%E9%98%B3%E5%A4%A7%E9%81%93%E5%90%8E%E5%B1%B1%E6%9D%91%E6%B4%AA%E9%A9%AC%E8%B7%AF%E8%A5%BF270%E5%8F%B7&city=%E6%8F%AD%E9%98%B3&view=map', sourceDate: '用户提供地址 2026-09-30', extra: false

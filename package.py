@@ -85,6 +85,11 @@ def build(source: Path, destination: Path) -> None:
         if marker in html:
             raise ValueError(f"unresolved local asset reference: {marker}")
 
+    # Script tags are removed from indented source lines, which can otherwise
+    # leave whitespace-only lines in the standalone artifact.  Normalize
+    # trailing whitespace so generated files stay clean under `git diff --check`.
+    html = "\n".join(line.rstrip() for line in html.splitlines()) + "\n"
+
     destination.parent.mkdir(parents=True, exist_ok=True)
     # Preserve an existing output mode when replacing a file; otherwise follow
     # the source page's mode (normally 0644).

@@ -10,6 +10,7 @@
   <script defer src="data/geography.js"></script>
   <script defer src="data/places.js"></script>
   <script defer src="data/itinerary.js"></script>
+  <script defer src="data/routes.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -30,7 +31,7 @@
       <div class="planner-grid">
         <section class="daily-plan" role="tabpanel" id="day-panel" aria-live="polite"><div class="day-heading"><div class="eyebrow" id="day-eyebrow"></div><h2 id="day-title"></h2><p id="day-subtitle"></p><div class="stay-line" id="day-stay"></div></div><div id="day-options"></div><ol class="timeline" id="timeline"></ol><div class="day-note" id="day-note"></div></section>
         <aside class="route-side">
-      <div class="map-panel"><div class="map-top"><div><span class="eyebrow">路线地图</span><h3 id="map-title">普宁 — 揭阳</h3></div><div class="map-buttons"><button class="icon-button" id="zoom-in" aria-label="放大地图">＋</button><button class="icon-button" id="zoom-out" aria-label="缩小地图">−</button><button class="icon-button" id="fit-map">全览</button></div></div><div class="map-wrap" id="map-wrap"><svg id="route-map" aria-label="普宁与揭阳行程地图"></svg><div class="north" aria-hidden="true">↑<span>N</span></div><div class="map-key"><span class="route-key"></span>预设驾车动线 <span class="nearby-key"></span>周边 <span class="food-key"></span>餐饮 <span class="saved-key"></span>想去</div></div><div id="map-saved-summary" class="map-saved-summary" aria-live="polite"></div><div class="map-foot">底图 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · WGS84<br>红色线为预设驾车动线的道路走向示意，不能替代实时导航；点击下方路线按钮可打开高德／百度驾车导航。餐饮收藏以片区锚点显示，具体门店和停车请以导航当天结果为准。</div></div>
+      <div class="map-panel"><div class="map-top"><div><span class="eyebrow">路线地图</span><h3 id="map-title">普宁 — 揭阳</h3></div><div class="map-buttons"><button class="icon-button" id="zoom-in" aria-label="放大地图">＋</button><button class="icon-button" id="zoom-out" aria-label="缩小地图">−</button><button class="icon-button" id="fit-map">全览</button></div></div><div class="map-wrap" id="map-wrap"><svg id="route-map" aria-label="普宁与揭阳行程地图"></svg><div class="north" aria-hidden="true">↑<span>N</span></div><div class="map-key"><span class="route-key"></span>OSM 道路路线 <span class="nearby-key"></span>周边 <span class="food-key"></span>餐饮 <span class="saved-key"></span>想去</div></div><div id="map-saved-summary" class="map-saved-summary" aria-live="polite"></div><div class="map-foot">底图与红色路线几何 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · WGS84<br>红色线按真实道路几何绘制，来自仓库内的 OSM 路线缓存；在线时会尝试更新 OSRM，道路服务失败也不会绘制直线。点击下方路线按钮可打开高德／百度实时驾车导航。餐饮收藏只作地图浏览，不参与路线。</div></div>
           <div class="place-detail" id="place-detail" aria-live="polite"></div>
           <div class="route-legs"><div id="route-presets"></div><div class="section-line"><h3>分段怎么走</h3><span>车程为规划预留</span></div><div id="route-legs"></div></div>
           <div class="return-reminder"><span class="reminder-icon" aria-hidden="true">↗</span><div><strong>10 月 3 日 · 20:00 到普宁站</strong><p>目标提前 68 分钟到站；约 19:00 从家出发。<br>车留家里，提前安排送站或预约车。</p></div></div>
