@@ -77,82 +77,82 @@ window.TRIP_PLACES = {
   },
   'laohe-changfen': {
     id: 'laohe-changfen', name: '老何肠粉（龙华里店）', short: '老何肠粉', area: 'puning', category: '餐饮', art: '粉',
-    coords: null, mapCoords: [116.158, 23.315], mapAccuracy: 'area', mapLabel: '老何肠粉·普宁市区收藏锚点', query: '老何肠粉 龙华里店 普宁', duration: '早餐／快餐 30–60 分钟',
+    coords: null, mapCoords: [116.158, 23.315], mapAccuracy: 'address', mapLabel: '老何肠粉·龙华里78栋', query: '普宁市龙华里78栋 老何肠粉', address: '普宁市龙华里78栋', duration: '早餐／快餐 30–60 分钟',
     rating: '3.3', reviews: '33 条', price: '约 ¥15／人', cuisine: '快餐简餐', meal: '早餐、早午餐',
     description: '用户高德收藏的肠粉店，适合 10 月 1 日补觉后不想跑远时作为早餐或简餐备选。',
     access: '评分、人均和分店地址来自用户收藏截图；出发前点高德核对营业时间、具体门店和导航路线。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/H7gxWFRD1FN15xRM', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'zhanxinglong-pork': {
     id: 'zhanxinglong-pork', name: '展兴隆深夜鲜猪肉', short: '展兴隆鲜猪肉', area: 'puning', category: '餐饮', art: '鲜',
-    coords: null, mapCoords: [116.165, 23.309], mapAccuracy: 'area', mapLabel: '展兴隆鲜猪肉·普宁市区收藏锚点', query: '展兴隆深夜鲜猪肉 普宁', duration: '夜宵 45–90 分钟',
+    coords: null, mapCoords: [116.165, 23.309], mapAccuracy: 'address', mapLabel: '展兴隆深夜鲜猪肉·长春路', query: '普宁市长春路 展兴隆深夜鲜猪肉', address: '普宁市长春路', duration: '夜宵 45–90 分钟',
     rating: '4.3', reviews: '190 条', price: '约 ¥31／人', cuisine: '鲜猪肉、夜宵', meal: '夜宵',
     description: '用户收藏的深夜鲜猪肉店，适合 10 月 1 日德安里周边晚饭后，或回御景城当晚的夜宵备选；不为它专门绕路。',
     access: '评分、人均和门店位置来自用户收藏截图；国庆营业、排队和停车请以高德当天信息为准。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/G77SwoepoucGOSdY', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'wangji-rice': {
     id: 'wangji-rice', name: '王记饭店（流沙大道西店）', short: '王记饭店', area: 'puning', category: '餐饮', art: '饭',
-    coords: null, mapCoords: [116.147, 23.304], mapAccuracy: 'area', mapLabel: '王记饭店·流沙大道西片区锚点', query: '王记饭店 流沙大道西店 普宁', duration: '正餐 45–90 分钟',
+    coords: null, mapCoords: [116.147, 23.304], mapAccuracy: 'address', mapLabel: '王记饭店·流沙大道西华侨医院斜对面', query: '普宁市流沙大道西华侨医院斜对面龙菀新村16栋 王记饭店', address: '流沙大道西华侨医院斜对面龙菀新村16栋', duration: '正餐 45–90 分钟',
     rating: '4.4', reviews: '390 条', price: '约 ¥37／人', cuisine: '潮汕菜', meal: '午餐、晚餐',
     description: '用户收藏的潮汕菜饭店，位置描述为流沙大道西店；可作为 10 月 1 日普宁市区午饭或返程前一顿正餐。',
     access: '评分、人均和分店信息来自用户收藏截图；导航前核对是否为流沙大道西店，避免同名店。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/ka5fjnSnCBJIjJ6r', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'ting-siji-coconut-chicken': {
     id: 'ting-siji-coconut-chicken', name: '厅四季椰子鸡（普宁翔悦时代店）', short: '厅四季椰子鸡', area: 'puning', category: '餐饮', art: '椰',
-    coords: null, mapCoords: [116.174, 23.326], mapAccuracy: 'area', mapLabel: '厅四季椰子鸡·翔悦时代片区锚点', query: '厅四季椰子鸡 普宁翔悦时代店', duration: '正餐 75–120 分钟',
+    coords: null, mapCoords: [116.174, 23.326], mapAccuracy: 'address', mapLabel: '厅四季椰子鸡·万泰新天地商场3楼', query: '普宁市万泰新天地商场3楼 厅四季椰子鸡', address: '普宁市万泰新天地商场3楼', duration: '正餐 75–120 分钟',
     rating: '4.2', reviews: '2756 条', price: '约 ¥60／人', cuisine: '椰子鸡火锅', meal: '晚餐、多人聚餐',
     description: '用户收藏的椰子鸡火锅店，有大桌和可预订标记，适合四人聚餐；国庆建议先看高德排队和订座信息。',
     access: '评分、人均和门店信息来自用户收藏截图；以高德当天营业、排队、停车和预订状态为准。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/k46cjAZXOnQhHthA', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'chaoji-houmi-zhou': {
     id: 'chaoji-houmi-zhou', name: '潮记厚弥粥（十年老店）', short: '潮记厚弥粥', area: 'puning', category: '餐饮', art: '粥',
-    coords: null, mapCoords: [116.166, 23.310], mapAccuracy: 'area', mapLabel: '潮记厚弥粥·兰花广场片区锚点', query: '潮记厚弥粥 十年老店 兰花广场 普宁', duration: '早餐／夜宵 30–60 分钟',
+    coords: null, mapCoords: [116.166, 23.310], mapAccuracy: 'address', mapLabel: '潮记厚弥粥·流沙大道西龙苑新村安全小区底商', query: '普宁市流沙大道西龙苑新村安全小区底商 潮记厚弥粥', address: '流沙大道西龙苑新村安全小区底商', duration: '早餐／夜宵 30–60 分钟',
     rating: '3.9', reviews: '12 条', price: '约 ¥26／人', cuisine: '小吃快餐', meal: '早餐、夜宵',
     description: '用户收藏的老店，截图标注在兰花广场附近；适合早饭、夜宵或不想吃火锅时的轻量选择。',
     access: '评分、人均和片区来自用户收藏截图；具体入口、营业时间和停车请点高德核对。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/H3ethS90iy6g7XwG', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'laozhou-changfen': {
     id: 'laozhou-changfen', name: '老周肠粉', short: '老周肠粉', area: 'puning', category: '餐饮', art: '肠',
-    coords: null, mapCoords: [116.155, 23.308], mapAccuracy: 'area', mapLabel: '老周肠粉·普宁市区收藏锚点', query: '老周肠粉 普宁', duration: '早餐／快餐 30–60 分钟',
+    coords: null, mapCoords: [116.155, 23.308], mapAccuracy: 'address', mapLabel: '老周肠粉·新光南路与德才街交叉口北行70米路东', query: '普宁市新光南路与德才街交叉口北行70米路东 老周肠粉', address: '新光南路与德才街交叉口北行70米路东', duration: '早餐／快餐 30–60 分钟',
     rating: '4.0', reviews: '146 条', price: '约 ¥23／人', cuisine: '小吃面食', meal: '早餐、早午餐',
     description: '用户收藏的肠粉店，适合 10 月 1 日午休后或 10 月 3 日山线取消时在御景城附近找早餐时比较。',
     access: '评分、人均和门店地址来自用户收藏截图；高德搜索可能出现同名结果，请核对普宁市区门店。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/H96Gd1z7jzxUm2f5', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'nanhua-guozhi': {
     id: 'nanhua-guozhi', name: '南华粿汁', short: '南华粿汁', area: 'puning', category: '餐饮', art: '粿',
-    coords: null, mapCoords: [116.154, 23.306], mapAccuracy: 'area', mapLabel: '南华粿汁·普宁市区收藏锚点', query: '南华粿汁 普宁', duration: '早餐／简餐 30–60 分钟',
+    coords: null, mapCoords: [116.154, 23.306], mapAccuracy: 'address', mapLabel: '南华粿汁·金都家具对面', query: '普宁市金都家具对面 南华粿汁', address: '金都家具对面', duration: '早餐／简餐 30–60 分钟',
     rating: '4.0', reviews: '34 条', price: '约 ¥24／人', cuisine: '小吃快餐', meal: '早餐、午餐',
     description: '用户收藏的粿汁店，适合想吃潮汕本地小吃时替代固定餐馆；可和肠粉、粥店按距离二选一。',
     access: '评分、人均和门店位置来自用户收藏截图；出发前用高德确认具体店址、营业时间和停车。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/laLKrJxyDol6ljPM', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'fuhecheng-beef-hotpot': {
     id: 'fuhecheng-beef-hotpot', name: '福合埕牛肉火锅（流沙总店）', short: '福合埕牛肉火锅', area: 'puning', category: '餐饮', art: '牛',
-    coords: null, mapCoords: [116.171, 23.302], mapAccuracy: 'area', mapLabel: '福合埕牛肉火锅·流沙片区锚点', query: '福合埕牛肉火锅 流沙总店 普宁', duration: '多人正餐 75–120 分钟',
+    coords: null, mapCoords: [116.171, 23.302], mapAccuracy: 'address', mapLabel: '福合埕牛肉火锅·文竹北路仁志昌宾馆楼下', query: '普宁市流沙东街道文竹北路仁志昌宾馆楼下 福合埕牛肉火锅', address: '流沙东街道文竹北路仁志昌宾馆楼下（第一实验小学斜对面）', duration: '多人正餐 75–120 分钟',
     rating: '4.3', reviews: '1358 条', price: '约 ¥74／人', cuisine: '潮汕牛肉火锅', meal: '晚餐、多人聚餐',
     description: '用户收藏的流沙总店，适合四人安排一顿牛肉火锅；国庆时段建议提前确认等位和停车。',
     access: '评分、人均和门店信息来自用户收藏截图；以高德当天营业、排队、停车和分店信息为准。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/k55nXLnoiBtqiz9p', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   'chenmin-beef': {
     id: 'chenmin-beef', name: '陈民牛肉店', short: '陈民牛肉店', area: 'puning', category: '餐饮', art: '牛',
-    coords: null, mapCoords: [116.167, 23.309], mapAccuracy: 'area', mapLabel: '陈民牛肉店·兰花广场片区锚点', query: '陈民牛肉店 兰花广场 普宁', duration: '快餐 30–60 分钟',
+    coords: null, mapCoords: [116.167, 23.309], mapAccuracy: 'address', mapLabel: '陈民牛肉店·流沙大道南平里127栋', query: '普宁市流沙大道南平里127栋 陈民牛肉店', address: '流沙大道南平里127栋', duration: '快餐 30–60 分钟',
     rating: '3.7', reviews: '9 条', price: '约 ¥40／人', cuisine: '快餐简餐', meal: '午餐、晚餐',
     description: '用户收藏的牛肉店，截图标注兰花广场附近；评论量较少，适合顺路尝试，不建议为它专门绕行。',
     access: '评分、人均和片区来自用户收藏截图；导航前核对实际门店、营业状态和停车条件。',
-    source: '', sourceDate: '用户收藏截图', extra: true, collection: true
+    source: 'https://www.dianping.com/shop/k3SCqABAVu8YGJ9r', sourceDate: '大众点评收藏页面 2026-09-30', extra: true, collection: true
   },
   hotel: {
-    id: 'hotel', name: '德安里周边住宿', short: '德安里住一晚', area: 'north', category: '住宿', art: '宿',
-    coords: [116.2115198, 23.4366566], mapLabel: '德安里周边住宿·未订', query: '广东省揭阳市普宁市洪阳镇德安里附近酒店', duration: '10 月 1 日住 1 晚',
-    description: '以德安里建筑群作为住宿片区锚点，不代表某家酒店。优先选择能停车、晚餐步行方便、10 月 2 日驶出顺畅的位置。',
-    access: '尚未选定或预订；订房前确认四人的房型、停车位、入住时间、退房和取消规则。',
-    source: 'http://www.puning.gov.cn/xwzx/pnxw/content/post_1047610.html', sourceDate: '2026-09-16', extra: false
+    id: 'hotel', name: '普宁华庭优品客房', short: '华庭优品客房', area: 'north', category: '住宿', art: '宿',
+    coords: null, mapCoords: [116.2115198, 23.4366566], mapAccuracy: 'address', mapLabel: '普宁华庭优品客房·后山村片区', query: '普宁华庭优品客房 普宁市洪阳镇洪阳大道后山村洪马路西270号', address: '普宁市洪阳镇洪阳大道后山村洪马路西270号', duration: '10 月 1 日住 1 晚',
+    description: '已确定住在普宁华庭优品客房：普宁市洪阳镇洪阳大道后山村洪马路西270号。地图仍以洪阳片区参考点展示，导航请使用高德地址搜索。',
+    access: '酒店名称和地址来自用户提供信息；入住、停车、房型和国庆前台安排请直接向酒店确认。',
+    source: 'https://uri.amap.com/search?keyword=%E6%99%AE%E5%AE%81%E5%8D%8E%E5%BA%AD%E4%BC%98%E5%93%81%E5%AE%A2%E6%88%BF%20%E6%99%AE%E5%B8%82%E6%B4%AA%E9%98%B3%E9%95%87%E6%B4%AA%E9%98%B3%E5%A4%A7%E9%81%93%E5%90%8E%E5%B1%B1%E6%9D%91%E6%B4%AA%E9%A9%AC%E8%B7%AF%E8%A5%BF270%E5%8F%B7&city=%E6%8F%AD%E9%98%B3&view=map', sourceDate: '用户提供地址 2026-09-30', extra: false
   },
   jinxianmen: {
     id: 'jinxianmen', name: '进贤门', short: '进贤门', area: 'jieyang', category: '古建', art: '门',

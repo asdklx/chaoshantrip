@@ -5,12 +5,13 @@
   const plan = window.TRIP_PLAN;
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const STORE_KEY = 'chaoshan-trip-v2';
-  const defaults = {day:'d1',mode:'relaxed',nanxi:true,view:'planner',filter:'all',saved:[],checks:[],skipped:[]};
+  const defaults = {day:'d1',mode:'relaxed',nanxi:true,view:'planner',filter:'all',routeVariant:'',saved:[],checks:[],skipped:[]};
   let state = {...defaults};
   try {
     const old = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (old && typeof old === 'object') {
       for (const [key, values] of Object.entries({day:['arrival','d1','d2','d3'],mode:['relaxed','outdoor','rain'],view:['planner','explore','prepare'],filter:['all','puning','north','jieyang','food','saved']})) if(values.includes(old[key])) state[key]=old[key];
+      if(typeof old.routeVariant==='string') state.routeVariant=old.routeVariant;
       for(const key of ['saved','checks','skipped']) if(Array.isArray(old[key])) state[key]=old[key].filter(x=>typeof x==='string');
       state.nanxi=old.nanxi===true;
     }
@@ -37,6 +38,68 @@
   const baiduSearch = id => `https://api.map.baidu.com/place/search?query=${encodeURIComponent(places[id].query || places[id].name)}&region=${encodeURIComponent(places[id].area==='shenzhen'?'深圳':'揭阳')}&output=html&src=webapp.chaoshan.trip`;
   const routePoint = id => {const p=places[id];return p.coords && !['home','hotel','mountain'].includes(id)?`latlng:${p.coords[1]},${p.coords[0]}|name:${p.query||p.name}`:p.query||p.name;};
   const routeLink = (from,to,mode='driving') => `https://api.map.baidu.com/direction?origin=${encodeURIComponent(routePoint(from))}&destination=${encodeURIComponent(routePoint(to))}&mode=${mode}&region=${encodeURIComponent(places[from].area==='shenzhen'?'深圳':'揭阳')}&coord_type=wgs84&output=html&src=webapp.chaoshan.trip`;
+  // Amap's public URI scheme opens a real car route with live traffic and
+  // turn-by-turn directions. Coordinates are only sent for verified points;
+  // area anchors fall back to a named search so the traveller can confirm the
+  // entrance before starting navigation.
+  const amapPoint = id => {
+    const p=places[id], c=hasExactCoords(id)?p.coords:null;
+    return c ? `${c[0]},${c[1]},${encodeURIComponent(p.query||p.name)}` : encodeURIComponent(p.query||p.name);
+  };
+  const amapRouteLink = (from,to,via=[]) => {
+    const a=places[from], b=places[to], ac=hasExactCoords(from), bc=hasExactCoords(to);
+    if(!ac || !bc) return searchLink(to);
+    const viaPart=via.filter(hasExactCoords).map(amapPoint).join(';');
+    return `https://uri.amap.com/navigation?from=${amapPoint(from)}&to=${amapPoint(to)}${viaPart?`&via=${viaPart}`:''}&mode=car&coordinate=wgs84&callnative=0`;
+  };
+
+  /*
+   * The overview map is deliberately a road-corridor illustration rather
+   * than a straight point-to-point connector. Each preset contains optional
+   * intermediate road waypoints, and its links open the live Amap/Baidu route.
+   * This makes the choice explicit while avoiding a false promise that a
+   * static map can know National Day traffic or temporary road controls.
+   */
+  const ROUTE_PRESETS = {
+    arrival: [
+      {id:'arrival-direct',label:'普宁站 → 御景城',note:'夜间接站后直接回家',points:['puning-station','home'],via:{'puning-station>home':[[116.186,23.286],[116.178,23.303],[116.166,23.316]]}},
+    ],
+    d1: [
+      {id:'d1-city',label:'人民公园顺路',note:'接站 → 御景城 → 人民公园 → 御景城 → 酒店',points:['puning-station','home','park','home','hotel'],via:{'puning-station>home':[[116.186,23.286],[116.178,23.303],[116.166,23.316]],'home>park':[[116.159,23.309],[116.164,23.303]],'park>home':[[116.164,23.303],[116.159,23.309]],'home>hotel':[[116.171,23.344],[116.193,23.381],[116.207,23.417],[116.212,23.431]]}},
+      {id:'d1-rest',label:'直接入住德安里',note:'接站 → 御景城 → 酒店，下午少绕行',points:['puning-station','home','hotel'],via:{'puning-station>home':[[116.186,23.286],[116.178,23.303],[116.166,23.316]],'home>hotel':[[116.171,23.344],[116.193,23.381],[116.207,23.417],[116.212,23.431]]}},
+    ],
+    d2: [
+      {id:'d2-water-temple',label:'水乡＋南岩',note:'德安里 → 南溪水乡 → 南岩古寺 → 御景城',points:['hotel','nanxi','nanyan','home'],via:{'hotel>nanxi':[[116.216,23.428],[116.227,23.414],[116.237,23.401]],'nanxi>nanyan':[[116.242,23.400],[116.248,23.406]],'nanyan>home':[[116.245,23.404],[116.229,23.381],[116.202,23.350],[116.178,23.326]]}},
+      {id:'d2-water-home',label:'只走南溪水乡',note:'德安里 → 南溪水乡 → 御景城',points:['hotel','nanxi','home'],via:{'hotel>nanxi':[[116.216,23.428],[116.227,23.414],[116.237,23.401]],'nanxi>home':[[116.225,23.383],[116.205,23.355],[116.178,23.326]]}},
+      {id:'d2-direct-home',label:'直接回御景城',note:'退房 → 御景城，适合雨天或想休息',points:['hotel','home'],via:{'hotel>home':[[116.209,23.413],[116.197,23.381],[116.178,23.344],[116.166,23.316]]}},
+    ],
+    d3: [
+      {id:'d3-mountain',label:'百二丘田山线',note:'御景城 → 百二丘田 → 御景城 → 普宁站',points:['home','mountain','home','puning-station'],via:{'home>mountain':[[116.163,23.300],[116.157,23.282],[116.166,23.265]],'mountain>home':[[116.166,23.276],[116.172,23.294],[116.166,23.316]],'home>puning-station':[[116.176,23.302],[116.185,23.287],[116.194,23.269]]}},
+      {id:'d3-direct-station',label:'休息后直接去车站',note:'御景城 → 普宁站，给返程留充足缓冲',points:['home','puning-station'],via:{'home>puning-station':[[116.176,23.302],[116.185,23.287],[116.194,23.269]]}},
+    ],
+  };
+  const routePresets = () => {
+    let presets=(ROUTE_PRESETS[state.day]||[]).slice();
+    if(state.day==='d1'&&skippedVisit('park')) presets=presets.filter(p=>p.id!=='d1-city');
+    if(state.day==='d2'&&(!nanxiPlanned()||skippedVisit('nanxi'))) presets=presets.filter(p=>p.id==='d2-direct-home');
+    if(state.day==='d2'&&skippedVisit('nanyan')) presets=presets.filter(p=>p.id!=='d2-water-temple');
+    if(state.day==='d3'&&!mountainPlanned()) presets=presets.filter(p=>p.id==='d3-direct-station');
+    return presets.length?presets:ROUTE_PRESETS[state.day]||[];
+  };
+  const activeRoutePreset = () => {const options=routePresets();return options.find(p=>p.id===state.routeVariant)||options[0]||null;};
+  const routeShape = preset => {
+    if(!preset)return [];
+    const out=[];
+    for(let i=0;i<preset.points.length-1;i++){
+      const from=preset.points[i],to=preset.points[i+1],a=visualCoords(from),b=visualCoords(to);
+      if(!a||!b)continue;
+      const via=(preset.via&&preset.via[`${from}>${to}`])||[];
+      const seg=[a,...via,b];
+      if(i)seg.shift();
+      out.push(...seg);
+    }
+    return out;
+  };
   const external = (href,label,cls='') => `<a href="${escape(href)}" class="${cls}" target="_blank" rel="noopener noreferrer">${label}</a>`;
   const toast = msg => {$('toast').textContent=msg;$('toast').hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>$('toast').hidden=true,2800);};
   const areaName = area => ({puning:'普宁市区',north:'洪阳 · 南溪',jieyang:'揭阳榕城',shenzhen:'深圳'}[area]||area);
@@ -134,7 +197,11 @@
       return `<li class="timeline-item ${s.kind}" ${s.skipped?'style="opacity:.52"':''}><div class="timeline-time">${escape(s.time)}${s.skipped?' · 已跳过':''}</div><div class="timeline-title-row"><button class="timeline-title" ${p?'data-place="'+s.place+'"':'disabled'}>${escape(s.title)}</button><span class="duration">${escape(s.duration)}</span></div><p class="timeline-desc">${escape(s.skipped?'这个时段留给休息或自由活动，不自动塞入其他景点。':s.desc)}</p><div class="inline-links">${p&&!s.skipped?external(searchLink(s.place),'高德地点 ↗'):''}${skip?`<button class="skip-stop" data-skip="${escape(s.key)}">${s.skipped?'恢复此站':'跳过此站'}</button>`:''}</div></li>`;
     }).join('');
     $('day-note').innerHTML=day.notes.map(n=>`<p>${escape(n)}</p>`).join('');
-    $('route-legs').innerHTML=routeLegs().map(l=>`<div class="leg"><span>${escape(places[l.from].short||places[l.from].name)} → ${escape(places[l.to].short||places[l.to].name)}</span><small>${escape(l.time)}<br>${escape(l.note)}</small>${external(routeLink(l.from,l.to,l.mode),'百度路线 ↗')}</div>`).join('');
+    const presets=routePresets(), activePreset=activeRoutePreset();
+    if(state.routeVariant!==activePreset?.id){state.routeVariant=activePreset?.id||'';save();}
+    const presetBox=$('route-presets');
+    if(presetBox) presetBox.innerHTML=presets.length?`<div class="route-preset-heading"><span>预设驾车路线</span><small>选择后地图按道路走向显示</small></div><div class="route-preset-list">${presets.map(p=>`<button class="route-preset ${p.id===activePreset?.id?'active':''}" data-route-preset="${escape(p.id)}" aria-pressed="${p.id===activePreset?.id}"><strong>${escape(p.label)}</strong><small>${escape(p.note)}</small></button>`).join('')}</div>`:'';
+    $('route-legs').innerHTML=routeLegs().map(l=>`<div class="leg"><span>${escape(places[l.from].short||places[l.from].name)} → ${escape(places[l.to].short||places[l.to].name)}</span><small>${escape(l.time)}<br>${escape(l.note)}</small><div class="leg-links">${external(amapRouteLink(l.from,l.to),'高德驾车 ↗')}${external(routeLink(l.from,l.to,l.mode),'百度驾车 ↗')}</div></div>`).join('');
     document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===state.mode));
     selected=state.day==='arrival'?'puning-station':state.day==='d1'?'home':state.day==='d2'?'hotel':mountainPlanned()?'mountain':'home';
     renderPlace();
@@ -146,7 +213,8 @@
     const precise=hasExactCoords(selected) && !['mountain','home','hotel'].includes(selected);
     const point=visualCoords(selected);
     const mapNote=!point?'<p>此点未标注地图坐标；点高德核对具体入口与实际位置。</p>':!hasExactCoords(selected)?'<p class="coordinate-note">地图使用片区定位参考；具体入口、分店和停车请以高德导航为准。</p>':selected==='mountain'?'<p>地图仅标灰寨村方位，不是百二丘田景区入口。</p>':precise?'<p class="coordinate-note">地图为建筑／场地中心点；停车、入口请看导航。</p>':'';
-    $('place-detail').innerHTML=`<div class="detail-top"><h3>${escape(p.name)}</h3><span>${escape(areaName(p.area))} · ${escape(p.duration||'位置参考')}</span></div><p>${escape(p.description)}</p><span class="verified-status">${escape(p.access)}</span>${mapNote}<div class="detail-actions">${external(searchLink(selected),'高德地点 ↗')}${external(baiduSearch(selected),'百度地点 ↗')}${p.source?external(p.source,'来源 ↗'):''}${p.extra?`<button data-save="${selected}">${state.saved.includes(selected)?'✓ 已加入想去':'＋ 加入想去'}</button>`:''}</div>`;
+    const address=p.address?`<p class="place-address"><b>地址：</b>${escape(p.address)}</p>`:'';
+    $('place-detail').innerHTML=`<div class="detail-top"><h3>${escape(p.name)}</h3><span>${escape(areaName(p.area))} · ${escape(p.duration||'位置参考')}</span></div><p>${escape(p.description)}</p>${address}<span class="verified-status">${escape(p.access)}</span>${mapNote}<div class="detail-actions">${external(searchLink(selected),'高德地点 ↗')}${external(baiduSearch(selected),'百度地点 ↗')}${p.source?external(p.source,'来源 ↗'):''}${p.extra?`<button data-save="${selected}">${state.saved.includes(selected)?'✓ 已加入想去':'＋ 加入想去'}</button>`:''}</div>`;
   }
 
   function mapBounds(ids) {
@@ -201,8 +269,13 @@
     scene.append('g').selectAll('path').data(features).join('path').attr('class',d=>`geo-${d.properties.kind} ${d.properties.class||''}`).attr('d',path);
     const route=routePoints();
     const ids=[...new Set(route.filter(id=>visualCoords(id)))];
-    const coords=route.map(id=>{const c=visualCoords(id);return c?mapTransform.apply(mapProjection(c)):null;});
-    scene.append('path').datum(coords).attr('class','route-path').attr('d',d3.line().defined(d=>d!==null));
+    const preset=activeRoutePreset();
+    const shape=routeShape(preset);
+    const coords=(shape.length?shape:route.map(id=>visualCoords(id)).filter(Boolean)).map(c=>mapTransform.apply(mapProjection(c)));
+    scene.append('path').datum(coords).attr('class','route-path').attr('d',d3.line().curve(d3.curveCatmullRom.alpha(.35)));
+    if(preset){
+      scene.append('text').attr('class','route-label').attr('x',18).attr('y',22).text(`驾车预设 · ${preset.label}`);
+    }
     if(!cityDetail){const labels=[{name:'普宁',pos:[116.139,23.322]},{name:'洪阳',pos:[116.180,23.459]},{name:'南溪',pos:[116.235,23.395]}];scene.append('g').selectAll('text').data(labels).join('text').attr('class','town-label').attr('x',d=>mapTransform.apply(mapProjection(d.pos))[0]).attr('y',d=>mapTransform.apply(mapProjection(d.pos))[1]).text(d=>d.name);}
     let nearby=state.day==='d1'?['park']:state.day==='d2'?['deanli']:['deanli'];
     nearby=nearby.filter(id=>{const c=visualCoords(id);return !ids.includes(id)&&c&&!ids.some(other=>String(visualCoords(other))===String(c));});
@@ -236,14 +309,14 @@
 
   function renderExplore() {
     const items=Object.values(places).filter(p=>p.extra&&(state.filter==='all'||(state.filter==='saved'?state.saved.includes(p.id):state.filter==='food'?p.category==='餐饮':p.area===state.filter)));
-    $('place-grid').innerHTML=items.length?items.map(p=>{const facts=p.category==='餐饮'?`<div class="food-facts"><span>${escape(p.cuisine||'餐饮')}</span><span>评分 ${escape(p.rating||'—')} · ${escape(p.reviews||'暂无评论')}</span><span>${escape(p.price||'价格待核')}</span><span>适合 ${escape(p.meal||'按当天营业安排')}</span></div>`:'';return `<article class="explore-card"><div class="place-art"><span class="art-label">${escape(areaName(p.area))}${p.collection?' · 我的收藏':''}</span><span class="art-word" aria-hidden="true">${escape(p.art||'游')}</span></div><div class="explore-card-content"><div class="card-meta"><span>${escape(p.category)}</span><span>${escape(p.duration)}</span></div><h3>${escape(p.name)}</h3>${facts}<p>${escape(p.description)}</p><div class="visit-info">${escape(p.access)} ${p.source?external(p.source,'资料 ↗'):''}</div><div class="detail-actions">${external(searchLink(p.id),'高德地点 / 导航 ↗')}${external(baiduSearch(p.id),'百度地点 ↗')}<button data-save="${p.id}" aria-pressed="${state.saved.includes(p.id)}">${state.saved.includes(p.id)?'✓ 已想去':'＋ 想去'}</button></div></div></article>`}).join(''):'<p class="explore-empty">还没有符合条件的地点。切换片区或回到「全部」看看。</p>';
+    $('place-grid').innerHTML=items.length?items.map(p=>{const facts=p.category==='餐饮'?`<div class="food-facts"><span>${escape(p.cuisine||'餐饮')}</span><span>评分 ${escape(p.rating||'—')} · ${escape(p.reviews||'暂无评论')}</span><span>${escape(p.price||'价格待核')}</span><span>适合 ${escape(p.meal||'按当天营业安排')}</span></div>`:'';const address=p.address?`<div class="place-address"><b>地址：</b>${escape(p.address)}</div>`:'';return `<article class="explore-card"><div class="place-art"><span class="art-label">${escape(areaName(p.area))}${p.collection?' · 我的收藏':''}</span><span class="art-word" aria-hidden="true">${escape(p.art||'游')}</span></div><div class="explore-card-content"><div class="card-meta"><span>${escape(p.category)}</span><span>${escape(p.duration)}</span></div><h3>${escape(p.name)}</h3>${facts}${address}<p>${escape(p.description)}</p><div class="visit-info">${escape(p.access)} ${p.source?external(p.source,'资料 ↗'):''}</div><div class="detail-actions">${external(searchLink(p.id),'高德地点 / 导航 ↗')}${external(baiduSearch(p.id),'百度地点 ↗')}<button data-save="${p.id}" aria-pressed="${state.saved.includes(p.id)}">${state.saved.includes(p.id)?'✓ 已想去':'＋ 想去'}</button></div></div></article>`}).join(''):'<p class="explore-empty">还没有符合条件的地点。切换片区或回到「全部」看看。</p>';
     document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.filter===state.filter));
     $('saved-count').textContent=state.saved.length;
   }
 
   function renderPrep() {
     $('checklist').innerHTML=plan.preparation.map((g,gi)=>`<section class="check-group"><h4>${escape(g.title)}</h4>${g.items.map((item,i)=>{const key=`${gi}-${i}`;return `<label class="check-item"><input type="checkbox" data-check="${key}" ${state.checks.includes(key)?'checked':''}><span>${escape(item)}</span></label>`;}).join('')}</section>`).join('');
-    $('hotel-search').href='https://uri.amap.com/search?keyword='+encodeURIComponent('普宁市洪阳镇德安里附近酒店')+'&city='+encodeURIComponent('揭阳')+'&view=map';
+    $('hotel-search').href=searchLink('hotel');
     $('sources-list').innerHTML='<ol>'+(window.TRIP_SOURCES||[]).map(s=>`<li>${external(s.url,escape(s.title))} · ${escape(s.date)}<br>${escape(s.note)}</li>`).join('')+'</ol>';
     $('changes-list').innerHTML=plan.changes.map(c=>`<div class="change-item"><div><small>草稿</small>${escape(c.from)}</div><div><small>这次建议</small>${escape(c.to)}</div><p>${escape(c.why)}</p></div>`).join('');
   }
@@ -258,7 +331,7 @@
   }
 
   function buildPrint() {
-    $('print-content').innerHTML=`<h1>潮汕小行 · 四人国庆行程</h1><p>2026 年 10 月 1–3 日 · 普宁御景城有家、有车 · ${state.mode==='outdoor'?'晴天户外版':state.mode==='rain'?'雨天版':'轻松版'} · ${nanxiPlanned()?'包含南溪主线':'跳过南溪水乡'}</p><p>已购：10/1 C8066 深圳北 01:20 → 普宁 02:59；10/3 D665 普宁 21:08 → 深圳北 22:35。</p><p>住宿：10/1 德安里周边酒店（未订）；10/2 回御景城；10/3 返回深圳。</p>${plan.days.map(raw=>{const d=dayCopy(raw);return `<section class="print-day"><h2>${escape(d.date+' · '+d.title)}</h2><p>${escape(d.subtitle)}</p><table><thead><tr><th>时间</th><th>安排</th></tr></thead><tbody>${dayStops(d).map(s=>`<tr><td>${escape(s.time)}</td><td><b>${escape(s.title)}${s.skipped?'（已跳过）':''}</b><br>${escape(s.skipped?'自由休息时段':s.desc)}</td></tr>`).join('')}</tbody></table></section>`;}).join('')}<p>交通均为规划预留，非实时导航。国庆开放与船班出发前复核。${mountainPlanned()?'10/3 百二丘田最迟 11:00 离开山线；':'10/3 百二丘田已取消；'}约 19:00 从御景城出门，目标 20:00 到普宁站，车辆留家。资料核对日期：2026-09-29。</p>`;
+    $('print-content').innerHTML=`<h1>潮汕小行 · 四人国庆行程</h1><p>2026 年 10 月 1–3 日 · 普宁御景城有家、有车 · ${state.mode==='outdoor'?'晴天户外版':state.mode==='rain'?'雨天版':'轻松版'} · ${nanxiPlanned()?'包含南溪主线':'跳过南溪水乡'}</p><p>已购：10/1 C8066 深圳北 01:20 → 普宁 02:59；10/3 D665 普宁 21:08 → 深圳北 22:35。</p><p>住宿：10/1 普宁华庭优品客房（洪阳大道后山村洪马路西270号）；10/2 回御景城；10/3 返回深圳。</p>${plan.days.map(raw=>{const d=dayCopy(raw);return `<section class="print-day"><h2>${escape(d.date+' · '+d.title)}</h2><p>${escape(d.subtitle)}</p><table><thead><tr><th>时间</th><th>安排</th></tr></thead><tbody>${dayStops(d).map(s=>`<tr><td>${escape(s.time)}</td><td><b>${escape(s.title)}${s.skipped?'（已跳过）':''}</b><br>${escape(s.skipped?'自由休息时段':s.desc)}</td></tr>`).join('')}</tbody></table></section>`;}).join('')}<p>交通均为规划预留，非实时导航。国庆开放与船班出发前复核。${mountainPlanned()?'10/3 百二丘田最迟 11:00 离开山线；':'10/3 百二丘田已取消；'}约 19:00 从御景城出门，目标 20:00 到普宁站，车辆留家。资料核对日期：2026-09-29。</p>`;
   }
 
   document.addEventListener('click',event=>{
@@ -266,6 +339,7 @@
     if(b.dataset.day){state.day=b.dataset.day;save();renderDay();}
     else if(b.dataset.mode){state.mode=b.dataset.mode;save();renderDay();toast(state.mode==='outdoor'?'已切换晴天户外安排':state.mode==='rain'?'已取消水乡与山线户外活动':'已恢复轻松节奏');}
     else if(b.dataset.view)showView(b.dataset.view);
+    else if(b.dataset.routePreset){state.routeVariant=b.dataset.routePreset;save();renderDay();toast('已切换驾车路线，地图按预设道路走向更新');}
     else if(b.dataset.place){selected=b.dataset.place;renderPlace();drawMap();if(window.innerWidth<761)$('place-detail').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});}
     else if(b.dataset.save){const id=b.dataset.save;state.saved=state.saved.includes(id)?state.saved.filter(x=>x!==id):[...state.saved,id];save();renderExplore();renderPlace();if(!$('planner-view').hidden)renderMap(true);toast(state.saved.includes(id)?'已加入想去，地图已更新':'已移出想去，地图已更新');}
     else if(b.dataset.filter){state.filter=b.dataset.filter;save();renderExplore();}

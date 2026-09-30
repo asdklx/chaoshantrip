@@ -11,3 +11,21 @@
 #route-map .point-circle.food-point{fill:#fff8e8;stroke:#bd8b38;stroke-width:2}.food-key{width:8px;height:8px;border:2px solid #bd8b38;background:#fff8e8;border-radius:50%;margin-left:10px}.food-dot{display:inline-block;width:6px;height:6px;border:2px solid #bd8b38;background:#fff8e8;border-radius:50%;margin-right:5px}.food-summary-heading{margin-top:9px;border-top:1px solid #d9dfd0;padding-top:8px}
 @media print{body{background:white;color:black;font-size:11px}.site-header,.hero,.view,footer,.toast{display:none!important}main{padding:0;max-width:none}#print-content{display:block}#print-content h1{font-size:25px}#print-content h2{font-size:20px;margin-top:25px}#print-content p{margin:7px 0}#print-content table{border-collapse:collapse;width:100%;font-size:11px}#print-content td,#print-content th{padding:8px;border-bottom:1px solid #ccc;text-align:left}#print-content td:first-child{width:18%;white-space:nowrap}#print-content tr{break-inside:avoid}.print-day{break-before:page}.print-day:first-of-type{break-before:auto}}
 #route-map .point-circle.saved-point{fill:#f6eee7;stroke:var(--rust);stroke-width:2.5}#route-map .point-circle.saved-point.active{fill:var(--rust);stroke:var(--paper)}.saved-key{width:8px;height:8px;border:2px solid var(--rust);border-radius:50%;margin-left:10px}.map-saved-summary{padding:10px 20px 4px;color:#64785e;font-size:11px;background:#eeeee0}.saved-summary-title{font-weight:600;margin-bottom:5px}.saved-summary-items{display:flex;gap:7px;flex-wrap:wrap}.saved-summary-item{padding:3px 8px;border:1px solid #c8d2be;border-radius:14px;color:var(--green);font-size:11px}.saved-summary-item:hover{background:#e3eadb}.saved-dot{display:inline-block;width:6px;height:6px;border:2px solid var(--rust);border-radius:50%;margin-right:5px}.saved-summary-note,.saved-summary-empty{font-size:10px;color:#7c8973;margin:5px 0 2px}
+/* Preset driving route controls and road-corridor overlay */
+.route-preset-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:16px 0 8px;font-size:12px;font-weight:500}
+.route-preset-heading small{font-size:10px;color:var(--muted);font-weight:400}
+.route-preset-list{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.route-preset{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:145px;max-width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--white);text-align:left}
+.route-preset strong{font-size:11px;font-weight:500}
+.route-preset small{font-size:10px;color:var(--muted);line-height:1.45}
+.route-preset:hover{border-color:#9caf91;background:#f7f8ef}
+.route-preset.active{border-color:var(--green);background:var(--light-green);box-shadow:inset 0 0 0 1px var(--green)}
+.leg-links{grid-column:2;grid-row:1 / 3;display:flex;flex-direction:column;gap:3px;align-self:center;align-items:flex-end;font-size:11px}
+.leg-links a{color:var(--green);white-space:nowrap}
+#route-map .route-label{font:11px var(--sans);fill:var(--rust);paint-order:stroke;stroke:#eeeee0;stroke-width:4px;stroke-linejoin:round}
+#route-map .route-path{stroke-dasharray:none;stroke-width:3}
+.route-key{border-top-style:solid;border-top-width:3px}
+.place-address{font-size:11px!important;color:var(--ink)!important;line-height:1.65!important;margin-top:8px!important}
+.explore-card .place-address{padding:8px 0;border-top:1px solid var(--line);margin:11px 0 0!important}
+.route-preset-list{overflow-x:auto}
+@media(max-width:760px){.route-preset{min-width:132px}.route-preset-heading{margin-top:13px}.leg-links{grid-column:1 / -1;grid-row:auto;flex-direction:row;justify-content:flex-end;gap:12px;margin-top:4px}.leg-links a{font-size:10px}}
